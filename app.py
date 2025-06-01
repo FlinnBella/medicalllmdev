@@ -1,5 +1,6 @@
 # app.py
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 from prompts import base_prompt
@@ -11,13 +12,22 @@ generator = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
 app = FastAPI()
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
 class PromptInput(BaseModel):
     prompt: str
 
 @app.post("/diagnose")
 def generate_diagnosis(prompt_input: PromptInput):
     # Combine base context + user input
-    full_prompt = f"{base_prompt}\nPatient: {prompt_input.patient_description}\nDiagnosis:"
+    full_prompt = f"{base_prompt}\nPatient: {prompt_input.prompt}\nDiagnosis:"
 
     # Generate response
     output = generator(full_prompt, max_new_tokens=100, do_sample=False)
